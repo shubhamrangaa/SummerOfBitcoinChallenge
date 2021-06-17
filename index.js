@@ -35,37 +35,40 @@ const parser = parse({ dlistItemimiter: "," }, function (err, data) {
     const best = [];
     let i = 1;
     let currWeight = 0;
+    let totalFee = 0;
+
     while (currWeight < 4000000) {
       if (4000000 - currWeight >= parseInt(array[i].weight)) {
-        // const txnNew = {};
-
-        if (array[i].parent) {
-          // console.log(array[i].parent);
-          array[i].parent.map((txn) => {
-            if (4000000 - currWeight >= parseInt(array[i].weight))
-              currWeight = currWeight + parseInt(array[i].weight);
-            // txnNew.no = txn.no;
-            // txnNew.id = txn.tx_id;
-            // best.push(txnNew);
-            best.push(txn.tx_id);
-          });
-        }
+        // CHECK IF THE TRANSACTION WAS ALREADY INCLUDED IN THE BLOCK
         if (best.includes(array[i].tx_id)) {
           continue;
         }
-        // txnNew.no = array[i].no;
-        // txnNew.id = array[i].tx_id;
-        // best.push(txnNew);
+
+        // CHECK IF A TRANSACTION HAS PARENTS
+        if (array[i].parent) {
+          // IF IT DOES, ADD THEM TO THE BLOCK
+          array[i].parent.map((txn) => {
+            if (4000000 - currWeight >= parseInt(txn.weight)) {
+              currWeight = currWeight + parseInt(txn.weight);
+              totalFee = totalFee + parseInt(txn.fee);
+              best.push(txn.tx_id);
+            }
+          });
+        }
+        // ADD TRANSACTION TO BLOCK
         best.push(array[i].tx_id);
         i++;
-
+        // INCREMENT TOTAL FEE AND WEIGHT AFTER TRANSACTION IS ADDED
+        totalFee = totalFee + parseInt(array[i].fee);
         currWeight = currWeight + parseInt(array[i].weight);
       } else break;
     }
-    console.log(currWeight);
-    console.log(best[1]);
-    console.log(best.length);
+    // TESTING
+    console.log(`Total weight of the block: ${currWeight}`);
+    console.log(`Total fee earned: ${totalFee}`);
+    console.log(`Total transactions in block: ${best.length}`);
 
+    // WRITE TO BLOCK.TXT
     fs.writeFile("block.txt", best.join("\n"), (err) => {
       // In case of a error throw err.
       if (err) throw err;
